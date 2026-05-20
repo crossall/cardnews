@@ -1,8 +1,4 @@
-모든 수정 사항(API 호출 및 파일 업로드(드래그 앤 드롭) 기능 개선)이 반영된 **전체 코드**입니다.
 
-기존 코드를 모두 지우고 아래 코드를 그대로 복사해서 붙여넣으신 뒤, 자바스크립트 부분에 있는 `여기에_선생님의_API_키를_입력하세요` 부분만 실제 API 키로 변경해서 사용하시면 됩니다.
-
-```html
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -59,8 +55,6 @@ input, select { width: 100%; font-family: 'Gowun Dodum', sans-serif; font-size: 
 input:focus, select:focus { outline: none; border-color: var(--accent-bright); box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.1); }
 /* UPLOAD ZONE */
 .upload-zone { border: 2px dashed var(--line); border-radius: 4px; padding: 3rem 2rem; text-align: center; cursor: pointer; transition: all 0.2s; background: rgba(255, 253, 245, 0.6); }
-/* 드래그 앤 드롭 방해 요소 제거 */
-.upload-zone * { pointer-events: none; }
 .upload-zone:hover { border-color: var(--accent-bright); background: var(--leaf-soft); }
 .upload-zone.dragover { border-color: var(--accent-bright); background: var(--leaf-soft); transform: scale(1.005); }
 .upload-zone.has-file { border-color: var(--accent-bright); border-style: solid; background: var(--leaf-soft); }
@@ -245,39 +239,43 @@ const criteriaList = document.getElementById('criteriaList');
 const nextStepsList = document.getElementById('nextStepsList');
 const resetBtn = document.getElementById('resetBtn');
 
-// 드래그 앤 드롭 및 클릭 이벤트 개선
-uploadZone.addEventListener('click', () => { 
-  fileInput.value = ''; 
-  fileInput.click(); 
+// 브라우저가 PDF를 새 탭으로 열어버리는 기본 동작을 막습니다.
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {
+  window.addEventListener(eventName, (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
 });
-uploadZone.addEventListener('dragenter', (e) => { 
-  e.preventDefault(); 
+
+uploadZone.addEventListener('click', () => fileInput.click());
+
+uploadZone.addEventListener('dragenter', () => {
+  uploadZone.classList.add('dragover');
 });
-uploadZone.addEventListener('dragover', (e) => { 
-  e.preventDefault(); 
-  uploadZone.classList.add('dragover'); 
+
+uploadZone.addEventListener('dragover', () => {
+  uploadZone.classList.add('dragover');
 });
-uploadZone.addEventListener('dragleave', (e) => { 
-  e.preventDefault(); 
-  uploadZone.classList.remove('dragover'); 
+
+uploadZone.addEventListener('dragleave', () => {
+  uploadZone.classList.remove('dragover');
 });
-uploadZone.addEventListener('drop', (e) => { 
-  e.preventDefault(); 
-  uploadZone.classList.remove('dragover'); 
-  const file = e.dataTransfer.files[0]; 
-  if (file) {
-    fileInput.files = e.dataTransfer.files;
-    handleFile(file); 
-  }
+
+uploadZone.addEventListener('drop', (e) => {
+  uploadZone.classList.remove('dragover');
+  const file = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (file) handleFile(file);
 });
-fileInput.addEventListener('change', (e) => { 
-  const file = e.target.files[0]; 
-  if (file) handleFile(file); 
+
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (file) handleFile(file);
 });
 
 function handleFile(file) {
   errorMsg.innerHTML = '';
-  if (file.type !== 'application/pdf') {
+  const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+  if (!isPdf) {
     showError('PDF 파일만 올릴 수 있어요. 캔바에서 [공유 → 다운로드 → PDF]로 내보낸 후 다시 올려주세요.');
     return;
   }
@@ -328,7 +326,7 @@ analyzeBtn.addEventListener('click', async () => {
         "anthropic-dangerously-allow-browser": "true"
       },
       body: JSON.stringify({
-        model: "claude-4-7-opus",
+        model: "claude-opus-4-7", // Anthropic API의 Opus 4.7 모델 ID
         max_tokens: 4000,
         messages: [
           {
@@ -373,8 +371,7 @@ analyzeBtn.addEventListener('click', async () => {
 });
 
 function parseJsonSafely(text) {
-  let cleaned = text.replace(/```json\s*/g, '').replace(/
-```\s*/g, '').trim();
+  let cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
   try { return JSON.parse(cleaned); } catch (e) {}
   let repaired = cleaned
     .replace(/,(\s*[}\]])/g, '$1')
@@ -446,9 +443,3 @@ resetBtn.addEventListener('click', () => {
 </script>
 </body>
 </html>
-
-```
-
-```
-
-```
